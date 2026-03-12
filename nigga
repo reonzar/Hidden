@@ -1,129 +1,266 @@
---[[
-    SeraphUI Library
-    A Roblox UI Library styled after seraph.wtf
-    Usage: local UI = loadstring(game:HttpGet("..."))() OR require(script)
-    
-    Written in Luau using Roblox CoreGui / ScreenGui
---]]
+-- UI Library Module
+local UILibrary = {}
+local players = game:GetService("Players")
+local playerGui = players.LocalPlayer:WaitForChild("PlayerGui")
 
-local SeraphUI = {}
-SeraphUI.__index = SeraphUI
+-- Create main screen GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SeraphUI"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- ─── Services ────────────────────────────────────────────────────────────────
-local Players         = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService    = game:GetService("TweenService")
-local RunService      = game:GetService("RunService")
-
-local LocalPlayer = Players.LocalPlayer
-
--- ─── Theme ───────────────────────────────────────────────────────────────────
-local Theme = {
-    Background      = Color3.fromRGB(18, 18, 18),
-    BackgroundLight = Color3.fromRGB(26, 26, 26),
-    BackgroundDark  = Color3.fromRGB(12, 12, 12),
-    Accent          = Color3.fromRGB(65, 120, 210),  -- Blue accent
-    AccentHover     = Color3.fromRGB(85, 140, 230),
-    Text            = Color3.fromRGB(220, 220, 220),
-    TextDim         = Color3.fromRGB(140, 140, 140),
-    TextActive      = Color3.fromRGB(255, 255, 255),
-    TabActive       = Color3.fromRGB(220, 220, 220),
-    TabInactive     = Color3.fromRGB(100, 100, 100),
-    Border          = Color3.fromRGB(45, 45, 45),
-    Separator       = Color3.fromRGB(55, 55, 55),
-    ToggleOn        = Color3.fromRGB(65, 120, 210),
-    ToggleOff       = Color3.fromRGB(35, 35, 35),
-    DropdownBg      = Color3.fromRGB(30, 30, 30),
-    SliderFill      = Color3.fromRGB(65, 120, 210),
-    SliderBg        = Color3.fromRGB(35, 35, 35),
-    TitleText       = Color3.fromRGB(65, 120, 210),  -- Blue "wtf"
-    TitleTextWhite  = Color3.fromRGB(200, 200, 200),
-    HeaderBg        = Color3.fromRGB(22, 22, 22),
-    NavBg           = Color3.fromRGB(20, 20, 20),
+-- Theme colors (based on the image)
+local theme = {
+    background = Color3.fromRGB(20, 20, 25),
+    darker = Color3.fromRGB(15, 15, 20),
+    text = Color3.fromRGB(255, 255, 255),
+    grayText = Color3.fromRGB(180, 180, 180),
+    accent = Color3.fromRGB(100, 200, 255),
+    checkboxBg = Color3.fromRGB(40, 40, 50),
+    toggleOn = Color3.fromRGB(100, 200, 255),
+    toggleOff = Color3.fromRGB(60, 60, 70),
+    border = Color3.fromRGB(30, 30, 40)
 }
 
--- ─── Utility ─────────────────────────────────────────────────────────────────
-local function Create(class, props, children)
-    local inst = Instance.new(class)
-    for k, v in pairs(props or {}) do
-        if k ~= "Parent" then
-            inst[k] = v
-        end
+-- Main window creation function
+function UILibrary:CreateWindow(title)
+    -- Main frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainWindow"
+    mainFrame.Size = UDim2.new(0, 800, 0, 600)
+    mainFrame.Position = UDim2.new(0.5, -400, 0.5, -300)
+    mainFrame.BackgroundColor3 = theme.background
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    -- Add shadow/drop shadow effect
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.Size = UDim2.new(1, 10, 1, 10)
+    shadow.Position = UDim2.new(0, -5, 0, -5)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.5
+    shadow.BorderSizePixel = 0
+    shadow.ZIndex = -1
+    shadow.Parent = mainFrame
+    
+    -- Top bar
+    local topBar = Instance.new("Frame")
+    topBar.Name = "TopBar"
+    topBar.Size = UDim2.new(1, 0, 0, 30)
+    topBar.BackgroundColor3 = theme.darker
+    topBar.BorderSizePixel = 0
+    topBar.Parent = mainFrame
+    
+    -- Title text
+    local titleText = Instance.new("TextLabel")
+    titleText.Name = "Title"
+    titleText.Size = UDim2.new(1, -10, 1, 0)
+    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = title .. " development | legitbot"
+    titleText.TextColor3 = theme.text
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextSize = 16
+    titleText.Parent = topBar
+    
+    -- Main content container
+    local contentContainer = Instance.new("Frame")
+    contentContainer.Name = "ContentContainer"
+    contentContainer.Size = UDim2.new(1, 0, 1, -30)
+    contentContainer.Position = UDim2.new(0, 0, 0, 30)
+    contentContainer.BackgroundTransparency = 1
+    contentContainer.Parent = mainFrame
+    
+    -- Left panel (navigation)
+    local leftPanel = Instance.new("Frame")
+    leftPanel.Name = "LeftPanel"
+    leftPanel.Size = UDim2.new(0, 120, 1, 0)
+    leftPanel.BackgroundColor3 = theme.darker
+    leftPanel.BorderSizePixel = 0
+    leftPanel.Parent = contentContainer
+    
+    -- Navigation buttons
+    local navButtons = {"aimbot", "scanning", "anti-aim", "movement", "misc", "backtrack"}
+    local buttonSpacing = 35
+    local startY = 10
+    
+    for i, btnName in ipairs(navButtons) do
+        local button = Instance.new("TextButton")
+        button.Name = btnName .. "Button"
+        button.Size = UDim2.new(1, -20, 0, 25)
+        button.Position = UDim2.new(0, 10, 0, startY + (i-1) * buttonSpacing)
+        button.BackgroundColor3 = theme.darker
+        button.BackgroundTransparency = 1
+        button.Text = btnName
+        button.TextColor3 = theme.grayText
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        button.Font = Enum.Font.Gotham
+        button.TextSize = 14
+        button.Parent = leftPanel
+        
+        -- Hover effect
+        button.MouseEnter:Connect(function()
+            if button.BackgroundTransparency == 1 then
+                button.BackgroundTransparency = 0.8
+                button.BackgroundColor3 = theme.accent
+            end
+        end)
+        
+        button.MouseLeave:Connect(function()
+            if button.BackgroundTransparency == 0.8 then
+                button.BackgroundTransparency = 1
+            end
+        end)
     end
-    for _, child in pairs(children or {}) do
-        child.Parent = inst
+    
+    -- Right panel (main content)
+    local rightPanel = Instance.new("Frame")
+    rightPanel.Name = "RightPanel"
+    rightPanel.Size = UDim2.new(1, -120, 1, 0)
+    rightPanel.Position = UDim2.new(0, 120, 0, 0)
+    rightPanel.BackgroundColor3 = theme.background
+    rightPanel.BorderSizePixel = 0
+    rightPanel.Parent = contentContainer
+    
+    -- Add tab content
+    local function createToggle(parent, name, posX, posY)
+        local toggleContainer = Instance.new("Frame")
+        toggleContainer.Name = name .. "Container"
+        toggleContainer.Size = UDim2.new(0, 120, 0, 30)
+        toggleContainer.Position = UDim2.new(0, posX, 0, posY)
+        toggleContainer.BackgroundTransparency = 1
+        toggleContainer.Parent = parent
+        
+        local toggleBg = Instance.new("Frame")
+        toggleBg.Name = "ToggleBg"
+        toggleBg.Size = UDim2.new(0, 20, 0, 20)
+        toggleBg.Position = UDim2.new(0, 0, 0.5, -10)
+        toggleBg.BackgroundColor3 = theme.toggleOff
+        toggleBg.BorderSizePixel = 0
+        toggleBg.Parent = toggleContainer
+        
+        local toggleIndicator = Instance.new("Frame")
+        toggleIndicator.Name = "ToggleIndicator"
+        toggleIndicator.Size = UDim2.new(0, 14, 0, 14)
+        toggleIndicator.Position = UDim2.new(0, 3, 0.5, -7)
+        toggleIndicator.BackgroundColor3 = theme.grayText
+        toggleIndicator.BorderSizePixel = 0
+        toggleIndicator.Parent = toggleBg
+        
+        local toggleText = Instance.new("TextLabel")
+        toggleText.Name = "ToggleText"
+        toggleText.Size = UDim2.new(1, -25, 1, 0)
+        toggleText.Position = UDim2.new(0, 25, 0, 0)
+        toggleText.BackgroundTransparency = 1
+        toggleText.Text = name
+        toggleText.TextColor3 = theme.text
+        toggleText.TextXAlignment = Enum.TextXAlignment.Left
+        toggleText.Font = Enum.Font.Gotham
+        toggleText.TextSize = 14
+        toggleText.Parent = toggleContainer
+        
+        local toggled = false
+        toggleBg.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                toggled = not toggled
+                if toggled then
+                    toggleBg.BackgroundColor3 = theme.toggleOn
+                    toggleIndicator.BackgroundColor3 = theme.text
+                else
+                    toggleBg.BackgroundColor3 = theme.toggleOff
+                    toggleIndicator.BackgroundColor3 = theme.grayText
+                end
+            end
+        end)
     end
-    if props and props.Parent then
-        inst.Parent = props.Parent
-    end
-    return inst
-end
-
-local function MakePadding(t, b, l, r)
-    local pad = Instance.new("UIPadding")
-    pad.PaddingTop    = UDim.new(0, t or 0)
-    pad.PaddingBottom = UDim.new(0, b or 0)
-    pad.PaddingLeft   = UDim.new(0, l or 0)
-    pad.PaddingRight  = UDim.new(0, r or 0)
-    return pad
-end
-
-local function MakeCorner(radius)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or 4)
-    return c
-end
-
-local function MakeStroke(color, thickness, transparency)
-    local s = Instance.new("UIStroke")
-    s.Color        = color or Theme.Border
-    s.Thickness    = thickness or 1
-    s.Transparency = transparency or 0
-    return s
-end
-
-local function MakeListLayout(dir, padding, halign, valign)
-    local l = Instance.new("UIListLayout")
-    l.FillDirection       = dir or Enum.FillDirection.Vertical
-    l.Padding             = UDim.new(0, padding or 0)
-    l.HorizontalAlignment = halign or Enum.HorizontalAlignment.Left
-    l.VerticalAlignment   = valign or Enum.VerticalAlignment.Top
-    l.SortOrder           = Enum.SortOrder.LayoutOrder
-    return l
-end
-
-local function Tween(inst, info, props)
-    TweenService:Create(inst, info, props):Play()
-end
-
-local FastTween  = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local MedTween   = TweenInfo.new(0.20, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
--- ─── Drag Logic ──────────────────────────────────────────────────────────────
-local function MakeDraggable(handle, frame)
-    local dragging, dragStart, startPos = false, nil, nil
-
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or
-           input.UserInputType == Enum.UserInputType.Touch then
-            dragging  = true
+    
+    -- Add aimbot section with toggles
+    local aimbotSection = Instance.new("Frame")
+    aimbotSection.Name = "AimbotSection"
+    aimbotSection.Size = UDim2.new(1, -30, 1, -20)
+    aimbotSection.Position = UDim2.new(0, 20, 0, 20)
+    aimbotSection.BackgroundTransparency = 1
+    aimbotSection.Parent = rightPanel
+    
+    createToggle(aimbotSection, "enabled", 0, 0)
+    createToggle(aimbotSection, "auto pathfind", 150, 0)
+    
+    -- Add scanner icon (visual representation)
+    local scannerFrame = Instance.new("Frame")
+    scannerFrame.Name = "ScannerFrame"
+    scannerFrame.Size = UDim2.new(0, 300, 0, 60)
+    scannerFrame.Position = UDim2.new(0, 0, 0, 40)
+    scannerFrame.BackgroundColor3 = theme.darker
+    scannerFrame.BorderSizePixel = 0
+    scannerFrame.Parent = aimbotSection
+    
+    local scannerText = Instance.new("TextLabel")
+    scannerText.Name = "ScannerText"
+    scannerText.Size = UDim2.new(1, -10, 1, 0)
+    scannerText.Position = UDim2.new(0, 10, 0, 0)
+    scannerText.BackgroundTransparency = 1
+    scannerText.Text = "scanning"
+    scannerText.TextColor3 = theme.text
+    scannerText.TextXAlignment = Enum.TextXAlignment.Left
+    scannerText.Font = Enum.Font.GothamBold
+    scannerText.TextSize = 16
+    scannerText.Parent = scannerFrame
+    
+    -- Movement settings
+    createToggle(aimbotSection, "walkspeed", 0, 110)
+    createToggle(aimbotSection, "jump power", 150, 110)
+    createToggle(aimbotSection, "sound override", 0, 150)
+    createToggle(aimbotSection, "multithreading", 0, 190)
+    createToggle(aimbotSection, "resolver", 0, 230)
+    createToggle(aimbotSection, "damage prediction", 0, 270)
+    createToggle(aimbotSection, "filtering", 0, 310)
+    
+    -- "none" text at bottom
+    local noneText = Instance.new("TextLabel")
+    noneText.Name = "NoneText"
+    noneText.Size = UDim2.new(1, -20, 0, 30)
+    noneText.Position = UDim2.new(0, 10, 1, -40)
+    noneText.BackgroundTransparency = 1
+    noneText.Text = "none"
+    noneText.TextColor3 = theme.grayText
+    noneText.TextXAlignment = Enum.TextXAlignment.Left
+    noneText.Font = Enum.Font.Gotham
+    noneText.TextSize = 14
+    noneText.Parent = aimbotSection
+    
+    -- Make window draggable
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    
+    topBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
             dragStart = input.Position
-            startPos  = frame.Position
+            startPos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
     end)
-
-    handle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or
-           input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+    
+    topBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
         end
     end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                         input.UserInputType == Enum.UserInputType.Touch) then
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
+            mainFrame.Position = UDim2.new(
                 startPos.X.Scale,
                 startPos.X.Offset + delta.X,
                 startPos.Y.Scale,
@@ -131,1501 +268,8 @@ local function MakeDraggable(handle, frame)
             )
         end
     end)
+    
+    return mainFrame
 end
 
--- ═══════════════════════════════════════════════════════════════════════════════
---  WINDOW
--- ═══════════════════════════════════════════════════════════════════════════════
-function SeraphUI.new(config)
-    config = config or {}
-    local self = setmetatable({}, SeraphUI)
-
-    self.Title       = config.Title       or "seraph"
-    self.Subtitle    = config.Subtitle    or "development"
-    self.Suffix      = config.Suffix      or "legitbot"
-    self.Size        = config.Size        or UDim2.new(0, 760, 0, 480)
-    self.Position    = config.Position    or UDim2.new(0.5, -380, 0.5, -240)
-    self.Tabs        = {}
-    self.ActiveNavTab  = nil
-    self.ActiveTopTab  = nil
-
-    -- ── Root GUI ──────────────────────────────────────────────────────────────
-    local gui = Create("ScreenGui", {
-        Name            = "SeraphUI",
-        ResetOnSpawn    = false,
-        ZIndexBehavior  = Enum.ZIndexBehavior.Sibling,
-    })
-
-    -- Try CoreGui first (executor), fallback to PlayerGui
-    local ok = pcall(function()
-        gui.Parent = game:GetService("CoreGui")
-    end)
-    if not ok then
-        gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    end
-
-    self.Gui = gui
-
-    -- ── Main Window Frame ─────────────────────────────────────────────────────
-    local window = Create("Frame", {
-        Name            = "Window",
-        Size            = self.Size,
-        Position        = self.Position,
-        BackgroundColor3 = Theme.Background,
-        BorderSizePixel = 0,
-        Parent          = gui,
-    })
-    MakeCorner(6).Parent = window
-    MakeStroke(Theme.Border, 1).Parent = window
-    self.Window = window
-
-    -- ── Drop Shadow ───────────────────────────────────────────────────────────
-    local shadow = Create("ImageLabel", {
-        Name            = "Shadow",
-        AnchorPoint     = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 1,
-        Position        = UDim2.new(0.5, 0, 0.5, 4),
-        Size            = UDim2.new(1, 24, 1, 24),
-        ZIndex          = 0,
-        Image           = "rbxassetid://6014054959",
-        ImageColor3     = Color3.new(0, 0, 0),
-        ImageTransparency = 0.5,
-        ScaleType       = Enum.ScaleType.Slice,
-        SliceCenter     = Rect.new(49, 49, 450, 450),
-        Parent          = window,
-    })
-
-    -- ── Title Bar ─────────────────────────────────────────────────────────────
-    local titleBar = Create("Frame", {
-        Name            = "TitleBar",
-        Size            = UDim2.new(1, 0, 0, 32),
-        BackgroundColor3 = Theme.HeaderBg,
-        BorderSizePixel = 0,
-        Parent          = window,
-    })
-
-    -- Bottom border line under title
-    Create("Frame", {
-        Name            = "Line",
-        Size            = UDim2.new(1, 0, 0, 1),
-        Position        = UDim2.new(0, 0, 1, -1),
-        BackgroundColor3 = Theme.Border,
-        BorderSizePixel = 0,
-        Parent          = titleBar,
-    })
-
-    -- Title text  e.g. "seraph.wtf development | legitbot"
-    local titleContainer = Create("Frame", {
-        Name            = "TitleContainer",
-        Size            = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Parent          = titleBar,
-    })
-    MakeListLayout(Enum.FillDirection.Horizontal, 0, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center).Parent = titleContainer
-
-    -- "seraph"
-    Create("TextLabel", {
-        Name            = "T1",
-        Text            = self.Title,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 13,
-        TextColor3      = Theme.Text,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        Parent          = titleContainer,
-    })
-    -- ".wtf"
-    Create("TextLabel", {
-        Name            = "T2",
-        Text            = ".wtf",
-        Font            = Enum.Font.Gotham,
-        TextSize        = 13,
-        TextColor3      = Theme.TitleText,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        Parent          = titleContainer,
-    })
-    -- " development"
-    Create("TextLabel", {
-        Name            = "T3",
-        Text            = " " .. self.Subtitle,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 13,
-        TextColor3      = Theme.TitleText,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        Parent          = titleContainer,
-    })
-    -- " | "
-    Create("TextLabel", {
-        Name            = "T4",
-        Text            = "  |  ",
-        Font            = Enum.Font.Gotham,
-        TextSize        = 13,
-        TextColor3      = Theme.TextDim,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        Parent          = titleContainer,
-    })
-    -- "legitbot"
-    Create("TextLabel", {
-        Name            = "T5",
-        Text            = self.Suffix,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 13,
-        TextColor3      = Theme.Text,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        Parent          = titleContainer,
-    })
-
-    MakeDraggable(titleBar, window)
-
-    -- ── Bottom Nav Bar ────────────────────────────────────────────────────────
-    local navBar = Create("Frame", {
-        Name            = "NavBar",
-        Size            = UDim2.new(1, 0, 0, 38),
-        Position        = UDim2.new(0, 0, 1, -38),
-        BackgroundColor3 = Theme.NavBg,
-        BorderSizePixel = 0,
-        Parent          = window,
-    })
-    -- Top border
-    Create("Frame", {
-        Name            = "Line",
-        Size            = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Theme.Border,
-        BorderSizePixel = 0,
-        Parent          = navBar,
-    })
-    MakeCorner(6).Parent = navBar
-
-    local navLayout = Create("Frame", {
-        Name            = "NavLayout",
-        Size            = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Parent          = navBar,
-    })
-    MakeListLayout(Enum.FillDirection.Horizontal, 0, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center).Parent = navLayout
-    self.NavBar    = navBar
-    self.NavLayout = navLayout
-    self.NavTabs   = {}
-
-    -- ── Content Area ──────────────────────────────────────────────────────────
-    -- Holds: top tab bar + two-column content panels
-    local contentArea = Create("Frame", {
-        Name            = "ContentArea",
-        Size            = UDim2.new(1, 0, 1, -32 - 38),
-        Position        = UDim2.new(0, 0, 0, 32),
-        BackgroundTransparency = 1,
-        Parent          = window,
-    })
-    self.ContentArea = contentArea
-
-    -- Top tab row (inside content)
-    local topTabBar = Create("Frame", {
-        Name            = "TopTabBar",
-        Size            = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = Theme.BackgroundDark,
-        BorderSizePixel = 0,
-        Parent          = contentArea,
-    })
-    Create("Frame", {
-        Name            = "Line",
-        Size            = UDim2.new(1, 0, 0, 1),
-        Position        = UDim2.new(0, 0, 1, -1),
-        BackgroundColor3 = Theme.Border,
-        BorderSizePixel = 0,
-        Parent          = topTabBar,
-    })
-    self.TopTabBar = topTabBar
-
-    -- Left and right column containers
-    local columns = Create("Frame", {
-        Name            = "Columns",
-        Size            = UDim2.new(1, 0, 1, -30),
-        Position        = UDim2.new(0, 0, 0, 30),
-        BackgroundTransparency = 1,
-        Parent          = contentArea,
-    })
-
-    -- Vertical divider
-    Create("Frame", {
-        Name            = "Divider",
-        Size            = UDim2.new(0, 1, 1, 0),
-        Position        = UDim2.new(0.5, 0, 0, 0),
-        BackgroundColor3 = Theme.Border,
-        BorderSizePixel = 0,
-        Parent          = columns,
-    })
-
-    local leftCol = Create("ScrollingFrame", {
-        Name                  = "LeftColumn",
-        Size                  = UDim2.new(0.5, -1, 1, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel       = 0,
-        ScrollBarThickness    = 3,
-        ScrollBarImageColor3  = Theme.Accent,
-        CanvasSize            = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize   = Enum.AutomaticSize.Y,
-        Parent                = columns,
-    })
-    MakePadding(8, 8, 12, 12).Parent = leftCol
-    MakeListLayout(Enum.FillDirection.Vertical, 4).Parent = leftCol
-
-    local rightCol = Create("ScrollingFrame", {
-        Name                  = "RightColumn",
-        Size                  = UDim2.new(0.5, -1, 1, 0),
-        Position              = UDim2.new(0.5, 1, 0, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel       = 0,
-        ScrollBarThickness    = 3,
-        ScrollBarImageColor3  = Theme.Accent,
-        CanvasSize            = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize   = Enum.AutomaticSize.Y,
-        Parent                = columns,
-    })
-    MakePadding(8, 8, 12, 12).Parent = rightCol
-    MakeListLayout(Enum.FillDirection.Vertical, 4).Parent = rightCol
-
-    self.Columns  = columns
-    self.LeftCol  = leftCol
-    self.RightCol = rightCol
-
-    -- Left top tabs container (left half of top bar)
-    local leftTabContainer = Create("Frame", {
-        Name            = "LeftTabs",
-        Size            = UDim2.new(0.5, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Parent          = topTabBar,
-    })
-    MakeListLayout(Enum.FillDirection.Horizontal, 0).Parent = leftTabContainer
-
-    -- Right top tabs container (right half of top bar)
-    local rightTabContainer = Create("Frame", {
-        Name            = "RightTabs",
-        Size            = UDim2.new(0.5, 0, 1, 0),
-        Position        = UDim2.new(0.5, 0, 0, 0),
-        BackgroundTransparency = 1,
-        Parent          = topTabBar,
-    })
-    MakeListLayout(Enum.FillDirection.Horizontal, 0).Parent = rightTabContainer
-
-    self.LeftTabContainer  = leftTabContainer
-    self.RightTabContainer = rightTabContainer
-
-    return self
-end
-
--- ═══════════════════════════════════════════════════════════════════════════════
---  NAV TAB  (bottom bar: ragebot | legit | visuals | players | misc)
--- ═══════════════════════════════════════════════════════════════════════════════
-function SeraphUI:AddNavTab(name)
-    local tabData = {
-        Name     = name,
-        Button   = nil,
-        TopTabs  = {},
-        ActiveTopTab = nil,
-    }
-
-    local btn = Create("TextButton", {
-        Name            = name,
-        Text            = name:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.TabInactive,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 120, 1, 0),
-        AutoButtonColor = false,
-        Parent          = self.NavLayout,
-    })
-
-    -- Active underline indicator
-    local indicator = Create("Frame", {
-        Name            = "Indicator",
-        Size            = UDim2.new(0.6, 0, 0, 2),
-        Position        = UDim2.new(0.2, 0, 1, -2),
-        BackgroundColor3 = Theme.Accent,
-        BorderSizePixel = 0,
-        Visible         = false,
-        Parent          = btn,
-    })
-    MakeCorner(2).Parent = indicator
-
-    tabData.Button    = btn
-    tabData.Indicator = indicator
-
-    btn.MouseButton1Click:Connect(function()
-        self:SelectNavTab(name)
-    end)
-
-    btn.MouseEnter:Connect(function()
-        if self.ActiveNavTab ~= name then
-            Tween(btn, FastTween, { TextColor3 = Theme.TextDim })
-        end
-    end)
-    btn.MouseLeave:Connect(function()
-        if self.ActiveNavTab ~= name then
-            Tween(btn, FastTween, { TextColor3 = Theme.TabInactive })
-        end
-    end)
-
-    table.insert(self.NavTabs, tabData)
-    self.Tabs[name] = tabData
-
-    if #self.NavTabs == 1 then
-        task.defer(function() self:SelectNavTab(name) end)
-    end
-
-    return tabData
-end
-
-function SeraphUI:SelectNavTab(name)
-    self.ActiveNavTab = name
-    for _, t in pairs(self.NavTabs) do
-        local isActive = (t.Name == name)
-        Tween(t.Button, FastTween, {
-            TextColor3 = isActive and Theme.TabActive or Theme.TabInactive
-        })
-        t.Indicator.Visible = isActive
-
-        -- Show/hide the top tab rows and columns belonging to this nav tab
-        if t.TopTabs then
-            for _, tt in pairs(t.TopTabs) do
-                tt.Button.Visible = isActive
-            end
-        end
-    end
-
-    -- Auto-select first top tab of this nav tab
-    local navTab = self.Tabs[name]
-    if navTab and #navTab.TopTabs > 0 then
-        local firstTop = navTab.TopTabs[1].Name
-        self:SelectTopTab(name, firstTop)
-    else
-        -- Clear columns
-        for _, v in pairs(self.LeftCol:GetChildren()) do
-            if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then
-                v.Visible = false
-            end
-        end
-        for _, v in pairs(self.RightCol:GetChildren()) do
-            if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then
-                v.Visible = false
-            end
-        end
-    end
-end
-
--- ═══════════════════════════════════════════════════════════════════════════════
---  TOP TAB  (aimbot | scanning | anti-aim  /  movement | misc | backtrack)
--- ═══════════════════════════════════════════════════════════════════════════════
-function SeraphUI:AddTopTab(navTabName, name, side)
-    side = side or "left"
-    local navTab = self.Tabs[navTabName]
-    if not navTab then return end
-
-    local container = (side == "left") and self.LeftTabContainer or self.RightTabContainer
-
-    local topTabData = {
-        Name       = name,
-        Side       = side,
-        Button     = nil,
-        LeftItems  = {},   -- elements in left column
-        RightItems = {},   -- elements in right column
-    }
-
-    local btn = Create("TextButton", {
-        Name            = name,
-        Text            = name:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.TabInactive,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 0, 1, 0),
-        AutomaticSize   = Enum.AutomaticSize.X,
-        AutoButtonColor = false,
-        Visible         = false,
-        Parent          = container,
-    })
-    MakePadding(0, 0, 10, 10).Parent = btn
-
-    -- Underline
-    local uline = Create("Frame", {
-        Name            = "Underline",
-        Size            = UDim2.new(1, -20, 0, 1),
-        Position        = UDim2.new(0, 10, 1, -1),
-        BackgroundColor3 = Theme.Accent,
-        BorderSizePixel = 0,
-        Visible         = false,
-        Parent          = btn,
-    })
-
-    topTabData.Button    = btn
-    topTabData.Underline = uline
-
-    btn.MouseButton1Click:Connect(function()
-        self:SelectTopTab(navTabName, name)
-    end)
-    btn.MouseEnter:Connect(function()
-        if navTab.ActiveTopTab ~= name then
-            Tween(btn, FastTween, { TextColor3 = Theme.TextDim })
-        end
-    end)
-    btn.MouseLeave:Connect(function()
-        if navTab.ActiveTopTab ~= name then
-            Tween(btn, FastTween, { TextColor3 = Theme.TabInactive })
-        end
-    end)
-
-    table.insert(navTab.TopTabs, topTabData)
-    topTabData.NavTabName = navTabName
-
-    return topTabData
-end
-
-function SeraphUI:SelectTopTab(navTabName, topTabName)
-    local navTab = self.Tabs[navTabName]
-    if not navTab then return end
-
-    navTab.ActiveTopTab = topTabName
-
-    -- Update button styles
-    for _, tt in pairs(navTab.TopTabs) do
-        local isActive = (tt.Name == topTabName)
-        Tween(tt.Button, FastTween, {
-            TextColor3 = isActive and Theme.TabActive or Theme.TabInactive
-        })
-        if tt.Underline then
-            tt.Underline.Visible = isActive
-        end
-    end
-
-    -- Show/hide the content items
-    for _, tt in pairs(navTab.TopTabs) do
-        local isActive = (tt.Name == topTabName)
-        for _, item in pairs(tt.LeftItems) do
-            if item and item.Parent then
-                item.Visible = isActive
-            end
-        end
-        for _, item in pairs(tt.RightItems) do
-            if item and item.Parent then
-                item.Visible = isActive
-            end
-        end
-    end
-end
-
--- ═══════════════════════════════════════════════════════════════════════════════
---  ELEMENT BUILDER  (attached to a TopTab)
--- ═══════════════════════════════════════════════════════════════════════════════
-
--- Helper: get the TopTabData object
-function SeraphUI:GetTopTab(navTabName, topTabName)
-    local navTab = self.Tabs[navTabName]
-    if not navTab then return nil end
-    for _, tt in pairs(navTab.TopTabs) do
-        if tt.Name == topTabName then return tt end
-    end
-    return nil
-end
-
--- ── Label row helper ─────────────────────────────────────────────────────────
-local function MakeLabelRow(parent, labelText, hasHelp)
-    local row = Create("Frame", {
-        Name            = labelText .. "Row",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Parent          = parent,
-    })
-
-    local lbl = Create("TextLabel", {
-        Name            = "Label",
-        Text            = labelText:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, -60, 1, 0),
-        Position        = UDim2.new(0, 0, 0, 0),
-        Parent          = row,
-    })
-
-    if hasHelp then
-        local helpBtn = Create("TextButton", {
-            Name            = "Help",
-            Text            = "?",
-            Font            = Enum.Font.Gotham,
-            TextSize        = 9,
-            TextColor3      = Theme.TextDim,
-            BackgroundTransparency = 1,
-            Size            = UDim2.new(0, 14, 0, 14),
-            Position        = UDim2.new(0, lbl.TextBounds.X + 2, 0.5, -7),
-            AutoButtonColor = false,
-            Parent          = row,
-        })
-
-        -- Update position once text loads
-        task.defer(function()
-            helpBtn.Position = UDim2.new(0, #labelText * 7 + 2, 0.5, -7)
-        end)
-    end
-
-    return row, lbl
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  TOGGLE
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddToggle(navTabName, topTabName, config)
-    config = config or {}
-    local label   = config.Label    or "Toggle"
-    local default = config.Default  ~= false
-    local column  = config.Column   or "left"
-    local callback = config.Callback or function() end
-    local hasHelp = config.Help     ~= false
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local value = default
-
-    local row = Create("Frame", {
-        Name            = label .. "Row",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    -- Label
-    Create("TextLabel", {
-        Name            = "Label",
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, -30, 1, 0),
-        Parent          = row,
-    })
-
-    -- Help "?"
-    if hasHelp then
-        Create("TextLabel", {
-            Name            = "Help",
-            Text            = " ?",
-            Font            = Enum.Font.Gotham,
-            TextSize        = 9,
-            TextColor3      = Theme.TextDim,
-            TextXAlignment  = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1,
-            Size            = UDim2.new(0, 16, 1, 0),
-            Position        = UDim2.new(0, #label * 7, 0, 0),
-            Parent          = row,
-        })
-    end
-
-    -- Checkbox
-    local checkbox = Create("TextButton", {
-        Name            = "Checkbox",
-        Text            = "",
-        BackgroundColor3 = value and Theme.ToggleOn or Theme.ToggleOff,
-        Size            = UDim2.new(0, 14, 0, 14),
-        Position        = UDim2.new(1, -14, 0.5, -7),
-        AutoButtonColor = false,
-        BorderSizePixel = 0,
-        Parent          = row,
-    })
-    MakeCorner(2).Parent = checkbox
-    MakeStroke(value and Theme.Accent or Theme.Border, 1).Parent = checkbox
-
-    local function updateVisual()
-        Tween(checkbox, FastTween, {
-            BackgroundColor3 = value and Theme.ToggleOn or Theme.ToggleOff
-        })
-        local stroke = checkbox:FindFirstChildOfClass("UIStroke")
-        if stroke then
-            Tween(stroke, FastTween, {
-                Color = value and Theme.Accent or Theme.Border
-            })
-        end
-    end
-
-    checkbox.MouseButton1Click:Connect(function()
-        value = not value
-        updateVisual()
-        callback(value)
-    end)
-
-    checkbox.MouseEnter:Connect(function()
-        Tween(checkbox, FastTween, { BackgroundColor3 = value and Theme.AccentHover or Color3.fromRGB(45, 45, 45) })
-    end)
-    checkbox.MouseLeave:Connect(function()
-        updateVisual()
-    end)
-
-    local ctrl = {
-        Row      = row,
-        Checkbox = checkbox,
-        Value    = function() return value end,
-        Set      = function(_, v)
-            value = v
-            updateVisual()
-            callback(value)
-        end,
-    }
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, row)
-    else
-        table.insert(topTab.RightItems, row)
-    end
-
-    return ctrl
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  SLIDER  (with optional gear icon)
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddSlider(navTabName, topTabName, config)
-    config = config or {}
-    local label    = config.Label    or "Slider"
-    local min      = config.Min      or 0
-    local max      = config.Max      or 100
-    local default  = config.Default  or min
-    local column   = config.Column   or "left"
-    local callback = config.Callback or function() end
-    local suffix   = config.Suffix   or ""
-    local hasGear  = config.Gear     ~= false
-    local hasHelp  = config.Help     ~= false
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local value = math.clamp(default, min, max)
-
-    local container = Create("Frame", {
-        Name            = label .. "Container",
-        Size            = UDim2.new(1, 0, 0, 38),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    -- Top row: label + gear + checkbox
-    local topRow = Create("Frame", {
-        Size            = UDim2.new(1, 0, 0, 22),
-        BackgroundTransparency = 1,
-        Parent          = container,
-    })
-
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, -50, 1, 0),
-        Parent          = topRow,
-    })
-
-    if hasHelp then
-        Create("TextLabel", {
-            Text            = " ?",
-            Font            = Enum.Font.Gotham,
-            TextSize        = 9,
-            TextColor3      = Theme.TextDim,
-            BackgroundTransparency = 1,
-            Size            = UDim2.new(0, 16, 1, 0),
-            Position        = UDim2.new(0, #label * 7, 0, 0),
-            Parent          = topRow,
-        })
-    end
-
-    -- Gear icon (◇)
-    if hasGear then
-        Create("TextLabel", {
-            Text            = "◇",
-            Font            = Enum.Font.Gotham,
-            TextSize        = 10,
-            TextColor3      = Theme.TextDim,
-            BackgroundTransparency = 1,
-            Size            = UDim2.new(0, 16, 1, 0),
-            Position        = UDim2.new(1, -30, 0, 0),
-            Parent          = topRow,
-        })
-    end
-
-    -- Enabled checkbox on right
-    local sliderEnabled = true
-    local enableBox = Create("TextButton", {
-        Text            = "",
-        BackgroundColor3 = Theme.ToggleOn,
-        Size            = UDim2.new(0, 14, 0, 14),
-        Position        = UDim2.new(1, -14, 0.5, -7),
-        AutoButtonColor = false,
-        BorderSizePixel = 0,
-        Parent          = topRow,
-    })
-    MakeCorner(2).Parent = enableBox
-    MakeStroke(Theme.Accent, 1).Parent = enableBox
-
-    enableBox.MouseButton1Click:Connect(function()
-        sliderEnabled = not sliderEnabled
-        Tween(enableBox, FastTween, {
-            BackgroundColor3 = sliderEnabled and Theme.ToggleOn or Theme.ToggleOff
-        })
-    end)
-
-    -- Slider bar
-    local barBg = Create("Frame", {
-        Size            = UDim2.new(1, 0, 0, 6),
-        Position        = UDim2.new(0, 0, 0, 28),
-        BackgroundColor3 = Theme.SliderBg,
-        BorderSizePixel = 0,
-        Parent          = container,
-    })
-    MakeCorner(3).Parent = barBg
-
-    local fill = Create("Frame", {
-        Size            = UDim2.new((value - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = Theme.SliderFill,
-        BorderSizePixel = 0,
-        Parent          = barBg,
-    })
-    MakeCorner(3).Parent = fill
-
-    -- Value label
-    local valLabel = Create("TextLabel", {
-        Text            = tostring(value) .. suffix,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 10,
-        TextColor3      = Theme.TextDim,
-        TextXAlignment  = Enum.TextXAlignment.Right,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, 0, 0, 14),
-        Position        = UDim2.new(0, 0, 0, 14),
-        Parent          = container,
-    })
-
-    -- Drag logic
-    local dragging = false
-
-    local function updateSlider(inputX)
-        local barAbs = barBg.AbsolutePosition.X
-        local barW   = barBg.AbsoluteSize.X
-        local rel    = math.clamp((inputX - barAbs) / barW, 0, 1)
-        value = math.floor(min + rel * (max - min) + 0.5)
-        fill.Size = UDim2.new(rel, 0, 1, 0)
-        valLabel.Text = tostring(value) .. suffix
-        callback(value)
-    end
-
-    barBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            updateSlider(input.Position.X)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateSlider(input.Position.X)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-
-    local ctrl = {
-        Container = container,
-        Value     = function() return value end,
-        Set       = function(_, v)
-            value = math.clamp(v, min, max)
-            local rel = (value - min) / (max - min)
-            fill.Size = UDim2.new(rel, 0, 1, 0)
-            valLabel.Text = tostring(value) .. suffix
-            callback(value)
-        end,
-    }
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, container)
-    else
-        table.insert(topTab.RightItems, container)
-    end
-
-    return ctrl
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  DROPDOWN
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddDropdown(navTabName, topTabName, config)
-    config = config or {}
-    local label    = config.Label    or "Dropdown"
-    local options  = config.Options  or {}
-    local default  = config.Default  or options[1] or "none"
-    local column   = config.Column   or "left"
-    local callback = config.Callback or function() end
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local selected = default
-    local open = false
-
-    local container = Create("Frame", {
-        Name            = label .. "Dropdown",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    -- Label
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0.4, 0, 1, 0),
-        Parent          = container,
-    })
-
-    -- Dropdown button
-    local dropBtn = Create("TextButton", {
-        Text            = selected,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 11,
-        TextColor3      = Theme.TextDim,
-        BackgroundColor3 = Theme.DropdownBg,
-        BorderSizePixel = 0,
-        Size            = UDim2.new(0.55, 0, 1, 0),
-        Position        = UDim2.new(0.44, 0, 0, 0),
-        AutoButtonColor = false,
-        Parent          = container,
-    })
-    MakeCorner(3).Parent = dropBtn
-    MakeStroke(Theme.Border, 1).Parent = dropBtn
-    MakePadding(0, 0, 6, 6).Parent = dropBtn
-
-    -- Arrow "▾"
-    Create("TextLabel", {
-        Text            = "▾",
-        Font            = Enum.Font.Gotham,
-        TextSize        = 10,
-        TextColor3      = Theme.TextDim,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0, 16, 1, 0),
-        Position        = UDim2.new(1, -18, 0, 0),
-        Parent          = dropBtn,
-    })
-
-    -- Dropdown list
-    local listFrame = Create("Frame", {
-        Name            = "List",
-        BackgroundColor3 = Theme.DropdownBg,
-        BorderSizePixel = 0,
-        Size            = UDim2.new(0.55, 0, 0, 0),
-        Position        = UDim2.new(0.44, 0, 1, 2),
-        ClipsDescendants = true,
-        ZIndex          = 10,
-        Visible         = false,
-        Parent          = container,
-    })
-    MakeCorner(3).Parent = listFrame
-    MakeStroke(Theme.Border, 1).Parent = listFrame
-    MakeListLayout(Enum.FillDirection.Vertical, 0).Parent = listFrame
-
-    local function closeDropdown()
-        open = false
-        Tween(listFrame, FastTween, { Size = UDim2.new(0.55, 0, 0, 0) })
-        task.delay(0.15, function() listFrame.Visible = false end)
-    end
-
-    local function buildList()
-        for _, v in pairs(listFrame:GetChildren()) do
-            if v:IsA("TextButton") then v:Destroy() end
-        end
-        for _, opt in pairs(options) do
-            local optBtn = Create("TextButton", {
-                Text            = opt,
-                Font            = Enum.Font.Gotham,
-                TextSize        = 11,
-                TextColor3      = opt == selected and Theme.TextActive or Theme.TextDim,
-                BackgroundTransparency = opt == selected and 0.7 or 1,
-                BackgroundColor3 = Theme.Accent,
-                BorderSizePixel = 0,
-                Size            = UDim2.new(1, 0, 0, 22),
-                AutoButtonColor = false,
-                ZIndex          = 11,
-                Parent          = listFrame,
-            })
-            MakePadding(0, 0, 6, 6).Parent = optBtn
-
-            optBtn.MouseEnter:Connect(function()
-                Tween(optBtn, FastTween, { BackgroundTransparency = 0.6, TextColor3 = Theme.TextActive })
-            end)
-            optBtn.MouseLeave:Connect(function()
-                Tween(optBtn, FastTween, {
-                    BackgroundTransparency = opt == selected and 0.7 or 1,
-                    TextColor3 = opt == selected and Theme.TextActive or Theme.TextDim
-                })
-            end)
-
-            optBtn.MouseButton1Click:Connect(function()
-                selected = opt
-                dropBtn.Text = selected
-                buildList()
-                closeDropdown()
-                callback(selected)
-            end)
-        end
-
-        local totalH = #options * 22
-        if open then
-            Tween(listFrame, FastTween, { Size = UDim2.new(0.55, 0, 0, totalH) })
-        end
-    end
-
-    dropBtn.MouseButton1Click:Connect(function()
-        open = not open
-        if open then
-            listFrame.Visible = true
-            buildList()
-        else
-            closeDropdown()
-        end
-    end)
-
-    local ctrl = {
-        Container = container,
-        Value     = function() return selected end,
-        Set       = function(_, v)
-            selected = v
-            dropBtn.Text = v
-            buildList()
-            callback(v)
-        end,
-        SetOptions = function(_, opts)
-            options = opts
-            selected = opts[1] or "none"
-            dropBtn.Text = selected
-        end,
-    }
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, container)
-    else
-        table.insert(topTab.RightItems, container)
-    end
-
-    return ctrl
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  LABEL  (read-only text row)
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddLabel(navTabName, topTabName, config)
-    config = config or {}
-    local text   = config.Text   or "Label"
-    local column = config.Column or "left"
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-
-    local lbl = Create("TextLabel", {
-        Name            = text .. "Label",
-        Text            = text,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 11,
-        TextColor3      = Theme.TextDim,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, 0, 0, 20),
-        Visible         = false,
-        Parent          = col,
-    })
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, lbl)
-    else
-        table.insert(topTab.RightItems, lbl)
-    end
-
-    return {
-        Label = lbl,
-        Set   = function(_, t) lbl.Text = t end,
-    }
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  SECTION HEADER  (thin separator with text)
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddSection(navTabName, topTabName, config)
-    config = config or {}
-    local text   = config.Text   or ""
-    local column = config.Column or "left"
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-
-    local frame = Create("Frame", {
-        Name            = text .. "Section",
-        Size            = UDim2.new(1, 0, 0, 18),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    -- Left line
-    Create("Frame", {
-        Size            = UDim2.new(0.15, 0, 0, 1),
-        Position        = UDim2.new(0, 0, 0.5, 0),
-        BackgroundColor3 = Theme.Separator,
-        BorderSizePixel = 0,
-        Parent          = frame,
-    })
-    -- Text
-    Create("TextLabel", {
-        Text            = text:upper(),
-        Font            = Enum.Font.GothamBold,
-        TextSize        = 9,
-        TextColor3      = Theme.TextDim,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0.7, 0, 1, 0),
-        Position        = UDim2.new(0.15, 4, 0, 0),
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        Parent          = frame,
-    })
-    -- Right line
-    Create("Frame", {
-        Size            = UDim2.new(0.1, -4, 0, 1),
-        Position        = UDim2.new(0.9, 0, 0.5, 0),
-        BackgroundColor3 = Theme.Separator,
-        BorderSizePixel = 0,
-        Parent          = frame,
-    })
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, frame)
-    else
-        table.insert(topTab.RightItems, frame)
-    end
-
-    return frame
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  KEYBIND
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddKeybind(navTabName, topTabName, config)
-    config = config or {}
-    local label    = config.Label    or "Keybind"
-    local default  = config.Default  or Enum.KeyCode.Unknown
-    local column   = config.Column   or "left"
-    local callback = config.Callback or function() end
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local bound = default
-    local listening = false
-
-    local row = Create("Frame", {
-        Name            = label .. "Keybind",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0.6, 0, 1, 0),
-        Parent          = row,
-    })
-
-    local keyBtn = Create("TextButton", {
-        Text            = bound == Enum.KeyCode.Unknown and "none" or bound.Name,
-        Font            = Enum.Font.Gotham,
-        TextSize        = 10,
-        TextColor3      = Theme.TextDim,
-        BackgroundColor3 = Theme.DropdownBg,
-        BorderSizePixel = 0,
-        Size            = UDim2.new(0.35, 0, 0.75, 0),
-        Position        = UDim2.new(0.64, 0, 0.125, 0),
-        AutoButtonColor = false,
-        Parent          = row,
-    })
-    MakeCorner(3).Parent = keyBtn
-    MakeStroke(Theme.Border, 1).Parent = keyBtn
-
-    keyBtn.MouseButton1Click:Connect(function()
-        listening = true
-        keyBtn.Text = "..."
-        keyBtn.TextColor3 = Theme.Accent
-    end)
-
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if listening then
-            if input.UserInputType == Enum.UserInputType.Keyboard then
-                bound = input.KeyCode
-                keyBtn.Text = bound.Name
-                keyBtn.TextColor3 = Theme.TextDim
-                listening = false
-                callback(bound)
-            end
-        end
-    end)
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, row)
-    else
-        table.insert(topTab.RightItems, row)
-    end
-
-    return {
-        Row   = row,
-        Value = function() return bound end,
-        Set   = function(_, k)
-            bound = k
-            keyBtn.Text = k == Enum.KeyCode.Unknown and "none" or k.Name
-            callback(k)
-        end,
-    }
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  TEXTBOX
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddTextbox(navTabName, topTabName, config)
-    config = config or {}
-    local label       = config.Label       or "Input"
-    local placeholder = config.Placeholder or "..."
-    local column      = config.Column      or "left"
-    local callback    = config.Callback    or function() end
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-
-    local row = Create("Frame", {
-        Name            = label .. "Textbox",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0.45, 0, 1, 0),
-        Parent          = row,
-    })
-
-    local box = Create("TextBox", {
-        PlaceholderText = placeholder,
-        Text            = "",
-        Font            = Enum.Font.Gotham,
-        TextSize        = 11,
-        TextColor3      = Theme.Text,
-        PlaceholderColor3 = Theme.TextDim,
-        BackgroundColor3 = Theme.DropdownBg,
-        BorderSizePixel = 0,
-        ClearTextOnFocus = false,
-        Size            = UDim2.new(0.5, 0, 0.75, 0),
-        Position        = UDim2.new(0.49, 0, 0.125, 0),
-        Parent          = row,
-    })
-    MakeCorner(3).Parent = box
-    MakeStroke(Theme.Border, 1).Parent = box
-    MakePadding(0, 0, 5, 5).Parent = box
-
-    box.FocusLost:Connect(function(enter)
-        callback(box.Text, enter)
-    end)
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, row)
-    else
-        table.insert(topTab.RightItems, row)
-    end
-
-    return {
-        Row   = row,
-        Value = function() return box.Text end,
-        Set   = function(_, v)
-            box.Text = v
-            callback(v, false)
-        end,
-    }
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  COLOR PICKER  (basic swatch)
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddColorPicker(navTabName, topTabName, config)
-    config = config or {}
-    local label    = config.Label    or "Color"
-    local default  = config.Default  or Color3.fromRGB(255, 255, 255)
-    local column   = config.Column   or "left"
-    local callback = config.Callback or function() end
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local currentColor = default
-    local pickerOpen = false
-
-    local row = Create("Frame", {
-        Name            = label .. "Color",
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(0.7, 0, 1, 0),
-        Parent          = row,
-    })
-
-    local swatch = Create("TextButton", {
-        Text            = "",
-        BackgroundColor3 = currentColor,
-        Size            = UDim2.new(0, 28, 0, 14),
-        Position        = UDim2.new(1, -28, 0.5, -7),
-        AutoButtonColor = false,
-        BorderSizePixel = 0,
-        Parent          = row,
-    })
-    MakeCorner(3).Parent = swatch
-    MakeStroke(Theme.Border, 1).Parent = swatch
-
-    -- Simplified picker popup
-    local pickerFrame = Create("Frame", {
-        Size            = UDim2.new(1, 0, 0, 80),
-        Position        = UDim2.new(0, 0, 1, 2),
-        BackgroundColor3 = Theme.BackgroundLight,
-        BorderSizePixel = 0,
-        ZIndex          = 20,
-        Visible         = false,
-        Parent          = row,
-    })
-    MakeCorner(4).Parent = pickerFrame
-    MakeStroke(Theme.Border, 1).Parent = pickerFrame
-
-    local presets = {
-        Color3.fromRGB(255,80,80),   Color3.fromRGB(255,170,80),
-        Color3.fromRGB(255,255,80),  Color3.fromRGB(80,255,80),
-        Color3.fromRGB(80,200,255),  Color3.fromRGB(65,120,210),
-        Color3.fromRGB(170,80,255),  Color3.fromRGB(255,255,255),
-        Color3.fromRGB(140,140,140), Color3.fromRGB(20,20,20),
-    }
-
-    local presetLayout = Create("Frame", {
-        Size            = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        ZIndex          = 21,
-        Parent          = pickerFrame,
-    })
-    MakePadding(8, 8, 8, 8).Parent = presetLayout
-    MakeListLayout(Enum.FillDirection.Horizontal, 4, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center).Parent = presetLayout
-
-    for _, c in pairs(presets) do
-        local ps = Create("TextButton", {
-            Text            = "",
-            BackgroundColor3 = c,
-            Size            = UDim2.new(0, 18, 0, 18),
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            ZIndex          = 22,
-            Parent          = presetLayout,
-        })
-        MakeCorner(3).Parent = ps
-        ps.MouseButton1Click:Connect(function()
-            currentColor = c
-            swatch.BackgroundColor3 = c
-            pickerFrame.Visible = false
-            pickerOpen = false
-            callback(c)
-        end)
-    end
-
-    swatch.MouseButton1Click:Connect(function()
-        pickerOpen = not pickerOpen
-        pickerFrame.Visible = pickerOpen
-    end)
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, row)
-    else
-        table.insert(topTab.RightItems, row)
-    end
-
-    return {
-        Row   = row,
-        Value = function() return currentColor end,
-        Set   = function(_, c)
-            currentColor = c
-            swatch.BackgroundColor3 = c
-            callback(c)
-        end,
-    }
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  MULTI-SELECT  (checklist)
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:AddMultiSelect(navTabName, topTabName, config)
-    config = config or {}
-    local label    = config.Label    or "Select"
-    local options  = config.Options  or {}
-    local default  = config.Default  or {}
-    local column   = config.Column   or "left"
-    local callback = config.Callback or function() end
-
-    local topTab = self:GetTopTab(navTabName, topTabName)
-    if not topTab then return end
-
-    local col = (column == "left") and self.LeftCol or self.RightCol
-    local selected = {}
-    for _, v in pairs(default) do selected[v] = true end
-
-    local container = Create("Frame", {
-        Name            = label .. "Multi",
-        Size            = UDim2.new(1, 0, 0, 26 + #options * 22),
-        BackgroundTransparency = 1,
-        Visible         = false,
-        Parent          = col,
-    })
-    MakeListLayout(Enum.FillDirection.Vertical, 0).Parent = container
-
-    -- Header
-    local header = Create("Frame", {
-        Size            = UDim2.new(1, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Parent          = container,
-    })
-    Create("TextLabel", {
-        Text            = label:lower(),
-        Font            = Enum.Font.Gotham,
-        TextSize        = 12,
-        TextColor3      = Theme.Text,
-        TextXAlignment  = Enum.TextXAlignment.Left,
-        BackgroundTransparency = 1,
-        Size            = UDim2.new(1, 0, 1, 0),
-        Parent          = header,
-    })
-
-    for _, opt in pairs(options) do
-        local isOn = selected[opt] == true
-        local optRow = Create("Frame", {
-            Name            = opt,
-            Size            = UDim2.new(1, 0, 0, 22),
-            BackgroundTransparency = 1,
-            Parent          = container,
-        })
-        MakePadding(0, 0, 12, 0).Parent = optRow
-
-        Create("TextLabel", {
-            Text            = opt:lower(),
-            Font            = Enum.Font.Gotham,
-            TextSize        = 11,
-            TextColor3      = Theme.TextDim,
-            TextXAlignment  = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1,
-            Size            = UDim2.new(1, -24, 1, 0),
-            Parent          = optRow,
-        })
-
-        local cb = Create("TextButton", {
-            Text            = "",
-            BackgroundColor3 = isOn and Theme.ToggleOn or Theme.ToggleOff,
-            Size            = UDim2.new(0, 12, 0, 12),
-            Position        = UDim2.new(1, -12, 0.5, -6),
-            AutoButtonColor = false,
-            BorderSizePixel = 0,
-            Parent          = optRow,
-        })
-        MakeCorner(2).Parent = cb
-        MakeStroke(isOn and Theme.Accent or Theme.Border, 1).Parent = cb
-
-        cb.MouseButton1Click:Connect(function()
-            selected[opt] = not selected[opt]
-            local on = selected[opt]
-            Tween(cb, FastTween, { BackgroundColor3 = on and Theme.ToggleOn or Theme.ToggleOff })
-            local stroke = cb:FindFirstChildOfClass("UIStroke")
-            if stroke then Tween(stroke, FastTween, { Color = on and Theme.Accent or Theme.Border }) end
-            callback(selected)
-        end)
-    end
-
-    if column == "left" then
-        table.insert(topTab.LeftItems, container)
-    else
-        table.insert(topTab.RightItems, container)
-    end
-
-    return {
-        Container = container,
-        Value     = function() return selected end,
-    }
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
---  DESTROY
--- ─────────────────────────────────────────────────────────────────────────────
-function SeraphUI:Destroy()
-    if self.Gui then
-        self.Gui:Destroy()
-    end
-end
-
-function SeraphUI:Toggle()
-    if self.Window then
-        self.Window.Visible = not self.Window.Visible
-    end
-end
+return UILibrary
